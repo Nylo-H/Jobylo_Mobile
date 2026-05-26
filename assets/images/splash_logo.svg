@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <!-- Background circle -->
+  <circle cx="100" cy="100" r="90" fill="#E8EDF5"/>
+  <!-- Briefcase icon -->
+  <rect x="45" y="80" width="110" height="80" rx="10" fill="#0D47A1"/>
+  <rect x="65" y="70" width="70" height="25" rx="8" fill="none" stroke="#0D47A1" stroke-width="8"/>
+  <line x1="100" y1="80" x2="100" y2="160" stroke="#1565C0" stroke-width="4"/>
+  <line x1="45" y1="118" x2="155" y2="118" stroke="#1565C0" stroke-width="4"/>
+</svg>

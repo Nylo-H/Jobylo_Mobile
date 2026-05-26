@@ -1,0 +1,73 @@
+name: jobylo
+description: "Jobylo - Plateforme de recrutement premium"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.10.4
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # UI
+  cupertino_icons: ^1.0.8
+  google_fonts: ^6.2.1
+  flutter_svg: ^2.0.17
+  cached_network_image: ^3.4.1
+  shimmer: ^3.0.0
+
+  # State Management
+  flutter_riverpod: ^2.6.1
+  riverpod_annotation: ^2.6.1
+
+  # Navigation
+  go_router: ^14.8.1
+
+  # Network
+  dio: ^5.7.0
+
+  # Storage
+  flutter_secure_storage: ^9.2.4
+  shared_preferences: ^2.3.4
+
+  # Models
+  freezed_annotation: ^2.4.4
+  json_annotation: ^4.9.0
+
+  # Utils
+  intl: ^0.19.0
+  image_picker: ^1.1.2
+  flutter_native_splash: ^2.4.3
+  stomp_dart_client: ^2.0.0
+  rxdart: ^0.28.0
+  sqflite: ^2.4.2
+  path_provider: ^2.1.5
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  build_runner: ^2.4.14
+  freezed: ^2.5.8
+  json_serializable: ^6.9.4
+  riverpod_generator: ^2.6.3
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/images/
+    - assets/icons/
+
+flutter_native_splash:
+  color: "#F5F7FA"
+  color_dark: "#0D47A1"
+  image: assets/images/splash_logo.png
+  image_dark: assets/images/splash_logo_dark.png
+  android_12:
+    color: "#F5F7FA"
+    color_dark: "#0D47A1"
+    image: assets/images/splash_logo.png
+    image_dark: assets/images/splash_logo_dark.png
+  fullscreen: false
