@@ -36,31 +36,35 @@ class AuthRepository {
     return User.fromJson(data);
   }
 
-  Future<void> login({
+  /// Returns `verified` flag from the server response.
+  Future<bool> login({
     required String email,
     required String password,
   }) async {
-    final data = await datasource.login(
-      email: email,
-      password: password,
-    );
-    final token = data['accesstoken'] as String;
-    await storage.saveAccessToken(token);
-
-    if (data['refreshtoken'] != null) {
-      await storage.saveRefreshToken(data['refreshtoken'] as String);
-    }
+    final data = await datasource.login(email: email, password: password);
+    await _saveTokens(data);
+    return data['verified'] as bool? ?? true;
   }
 
-  Future<void> verifyOtp({
+  /// Verifies OTP → auto-login → returns User (tokens already stored).
+  Future<User> verifyOtpAndLogin({
     required String email,
     required String otp,
   }) async {
-    await datasource.verifyOtp(email: email, otp: otp);
+    final data = await datasource.verifyOtpLogin(email: email, otp: otp);
+    await _saveTokens(data);
+    return getMe();
   }
 
-  Future<void> resendOtp({required String username}) async {
-    await datasource.resendOtp(username: username);
+  Future<void> resendOtp({required String email}) async {
+    await datasource.resendOtp(email: email);
+  }
+
+  Future<void> _saveTokens(Map<String, dynamic> data) async {
+    final access = data['accesstoken'] as String?;
+    final refresh = data['refreshtoken'] as String?;
+    if (access != null) await storage.saveAccessToken(access);
+    if (refresh != null) await storage.saveRefreshToken(refresh);
   }
 
   Future<User> getMe() async {

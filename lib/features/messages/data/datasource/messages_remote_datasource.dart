@@ -4,24 +4,38 @@ import '../../../../core/network/api_exception.dart';
 
 class MessagesRemoteDatasource {
   final Dio _dio;
-
   MessagesRemoteDatasource(this._dio);
 
   Future<List<Map<String, dynamic>>> getConversations() async {
     try {
-      final response = await _dio.get(ApiConstants.conversations);
-      return (response.data as List).cast<Map<String, dynamic>>();
+      final r = await _dio.get(ApiConstants.conversations);
+      return _toList(r.data);
     } on DioException catch (e) {
       throw ApiException.fromDioException(e);
     }
   }
 
-  Future<List<Map<String, dynamic>>> getMessages(String conversationId) async {
+  /// Returns a Spring Page response: { content, totalPages, number, last }
+  Future<Map<String, dynamic>> getMessagesPaged(
+    String conversationId, {
+    int page = 0,
+    int size = 50,
+  }) async {
     try {
-      final response = await _dio.get(
+      final r = await _dio.get(
         '${ApiConstants.messagesConversation}/$conversationId',
+        queryParameters: {'page': page, 'size': size},
       );
-      return (response.data as List).cast<Map<String, dynamic>>();
+      // Supports both paginated (Map) and legacy list responses
+      if (r.data is List) {
+        return {
+          'content': r.data,
+          'last': true,
+          'number': 0,
+          'totalPages': 1,
+        };
+      }
+      return r.data as Map<String, dynamic>;
     } on DioException catch (e) {
       throw ApiException.fromDioException(e);
     }
@@ -32,11 +46,11 @@ class MessagesRemoteDatasource {
     required String content,
   }) async {
     try {
-      final response = await _dio.post(
+      final r = await _dio.post(
         '${ApiConstants.messagesStart}/$jobId',
         data: {'content': content},
       );
-      return response.data as Map<String, dynamic>;
+      return r.data as Map<String, dynamic>;
     } on DioException catch (e) {
       throw ApiException.fromDioException(e);
     }
@@ -47,11 +61,11 @@ class MessagesRemoteDatasource {
     required String content,
   }) async {
     try {
-      final response = await _dio.post(
+      final r = await _dio.post(
         ApiConstants.messages,
         data: {'conversationId': conversationId, 'content': content},
       );
-      return response.data as Map<String, dynamic>;
+      return r.data as Map<String, dynamic>;
     } on DioException catch (e) {
       throw ApiException.fromDioException(e);
     }
@@ -59,18 +73,39 @@ class MessagesRemoteDatasource {
 
   Future<int> getUnreadCount() async {
     try {
-      final response = await _dio.get(ApiConstants.unreadCount);
-      return (response.data as Map<String, dynamic>)['unreadCount'] as int? ?? 0;
+      final r = await _dio.get(ApiConstants.unreadCount);
+      return (r.data as Map<String, dynamic>)['unreadCount'] as int? ?? 0;
     } on DioException catch (e) {
       throw ApiException.fromDioException(e);
     }
   }
 
-  Future<void> markAsRead(String messageId) async {
+  Future<void> markMessageRead(String messageId) async {
     try {
       await _dio.patch('${ApiConstants.messages}/$messageId/read');
     } on DioException catch (e) {
       throw ApiException.fromDioException(e);
     }
+  }
+
+  /// Marks ALL unread messages in the conversation as read in one call.
+  Future<void> markConversationRead(String conversationId) async {
+    try {
+      await _dio.patch(
+        '${ApiConstants.messagesConversation}/$conversationId/read',
+      );
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
+  static List<Map<String, dynamic>> _toList(dynamic data) {
+    if (data is List) {
+      return data.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+    }
+    if (data is Map && data.containsKey('content')) {
+      return _toList(data['content']);
+    }
+    return [];
   }
 }

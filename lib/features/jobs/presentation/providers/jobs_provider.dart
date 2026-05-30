@@ -14,13 +14,21 @@ class JobFiltersNotifier extends StateNotifier<JobFilters> {
   void setCategory(String? id) =>
       state = state.copyWith(categoryId: id, clearCategory: id == null);
 
+  void setLocation(String? loc) => state = state.copyWith(
+        location: loc,
+        clearLocation: loc == null || loc.isEmpty,
+      );
+
   void setSearch(String? q) =>
       state = state.copyWith(q: q, clearSearch: q == null || q.isEmpty);
 
   void setSort(String sort) => state = state.copyWith(sort: sort);
 
-  void setPriceRange(double? min, double? max) =>
-      state = state.copyWith(minPrice: min, maxPrice: max);
+  void setPriceRange(double? min, double? max) => state = state.copyWith(
+        minPrice: min,
+        maxPrice: max,
+        clearPrice: min == null && max == null,
+      );
 
   void reset() => state = const JobFilters();
 }

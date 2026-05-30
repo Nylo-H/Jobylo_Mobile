@@ -33,7 +33,7 @@ class ShellScaffold extends StatelessWidget {
             BottomNavigationBarItem(
               icon: Icon(Icons.work_outline),
               activeIcon: Icon(Icons.work),
-              label: 'Emplois',
+              label: 'Jobs',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.campaign_outlined),

@@ -7,6 +7,7 @@ import '../../../../core/constants/app_sizes.dart';
 import '../../data/repository/auth_repository.dart';
 import '../providers/auth_provider.dart';
 
+
 class OtpPage extends ConsumerStatefulWidget {
   final String email;
   const OtpPage({super.key, required this.email});
@@ -69,16 +70,15 @@ class _OtpPageState extends ConsumerState<OtpPage> {
     }
     setState(() => _isVerifying = true);
     try {
-      final repo = ref.read(authRepositoryProvider);
-      await repo.verifyOtp(email: widget.email, otp: _otp);
-      if (mounted) {
-        _showSnack('Compte vérifié avec succès !');
-        context.go('/auth/login');
-      }
+      // Auto-login: OTP verification returns tokens + user
+      await ref.read(authStateProvider.notifier).completeOtpLogin(
+            email: widget.email,
+            otp: _otp,
+          );
+      // GoRouter refreshListenable redirects to /jobs automatically
     } catch (e) {
       if (mounted) {
         _showSnack(e.toString(), isError: true);
-        // Clear fields on error
         for (final c in _controllers) {
           c.clear();
         }
@@ -94,7 +94,7 @@ class _OtpPageState extends ConsumerState<OtpPage> {
     setState(() => _isResending = true);
     try {
       final repo = ref.read(authRepositoryProvider);
-      await repo.resendOtp(username: widget.email);
+      await repo.resendOtp(email: widget.email);
       if (mounted) {
         _showSnack('Nouveau code envoyé à ${widget.email}');
         _startCooldown();

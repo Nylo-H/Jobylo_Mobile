@@ -1,8 +1,9 @@
 class ApiConstants {
   ApiConstants._();
 
-  static const String baseUrl = 'http://10.5.50.5:8080/api';
-  static const String wsUrl = 'ws://10.5.50.5:8080/api/ws';
+  static const String baseUrl =
+      'http://192.168.137.1:8080/api'; // 192.168.137.1
+  static const String wsUrl = 'ws://192.168.137.1:8080/api/ws';
 
   // Auth
   static const String register = '/auth/register';
@@ -42,6 +43,10 @@ class ApiConstants {
   // KYC
   static const String kycUpload = '/kyc/upload';
   static const String kycStatus = '/kyc/status';
+
+  // Password Reset
+  static const String forgotPassword = '/auth/forgot-password';
+  static const String resetPassword = '/auth/reset-password';
 
   // Users
   static const String users = '/users';

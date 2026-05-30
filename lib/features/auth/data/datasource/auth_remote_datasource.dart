@@ -49,27 +49,27 @@ class AuthRemoteDatasource {
     }
   }
 
-  Future<void> verifyOtp({
+  /// Returns the full LoginResponse map (includes verified + tokens).
+  Future<Map<String, dynamic>> verifyOtpLogin({
     required String email,
     required String otp,
   }) async {
     try {
-      await _dio.post(
+      final response = await _dio.post(
         ApiConstants.verifyOtp,
-        data: {
-          'email': email,
-          'otp': otp,
-        },
+        data: {'email': email, 'otp': otp},
       );
+      // Backend returns LoginResponse with tokens on success
+      return response.data as Map<String, dynamic>;
     } on DioException catch (e) {
       throw ApiException.fromDioException(e);
     }
   }
 
-  Future<void> resendOtp({required String username}) async {
+  Future<void> resendOtp({required String email}) async {
     try {
       await _dio.post(
-        '${ApiConstants.resendOtp}?username=$username',
+        '${ApiConstants.resendOtp}?email=${Uri.encodeComponent(email)}',
       );
     } on DioException catch (e) {
       throw ApiException.fromDioException(e);

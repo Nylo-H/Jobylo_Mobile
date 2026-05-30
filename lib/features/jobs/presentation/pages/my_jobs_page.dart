@@ -7,6 +7,7 @@ import '../../../../shared/widgets/app_loading.dart';
 import '../../../../shared/widgets/app_error.dart';
 import '../../../../shared/widgets/app_empty.dart';
 import '../../../../shared/widgets/job_card.dart';
+import '../../../applications/presentation/pages/my_applications_page.dart';
 import '../providers/jobs_provider.dart';
 import 'create_job_page.dart';
 
@@ -24,7 +25,7 @@ class _MyJobsPageState extends ConsumerState<MyJobsPage>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
   }
 
   @override
@@ -44,12 +45,13 @@ class _MyJobsPageState extends ConsumerState<MyJobsPage>
           unselectedLabelColor: AppColors.textSecondary,
           indicatorColor: AppColors.primary,
           labelStyle: const TextStyle(
-            fontSize: 14,
+            fontSize: 13,
             fontWeight: FontWeight.w600,
           ),
           tabs: const [
             Tab(text: 'Créées'),
             Tab(text: 'En cours'),
+            Tab(text: 'Candidatures'),
           ],
         ),
       ),
@@ -68,6 +70,8 @@ class _MyJobsPageState extends ConsumerState<MyJobsPage>
             emptyIcon: Icons.engineering_outlined,
             onRefresh: () => ref.invalidate(myAssignedJobsProvider),
           ),
+          // Mes candidatures (worker view)
+          const MyApplicationsPage(),
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
@@ -76,10 +80,7 @@ class _MyJobsPageState extends ConsumerState<MyJobsPage>
         icon: const Icon(Icons.add, color: Colors.white),
         label: const Text(
           'Nouvelle annonce',
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.w600,
-          ),
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
         ),
       ),
     );
@@ -125,7 +126,8 @@ class _JobsList extends ConsumerWidget {
           child: ListView.separated(
             padding: const EdgeInsets.all(AppSizes.md),
             itemCount: jobs.length,
-            separatorBuilder: (_, _) => const SizedBox(height: AppSizes.md),
+            separatorBuilder: (_, _) =>
+                const SizedBox(height: AppSizes.md),
             itemBuilder: (context, i) => JobCard(
               job: jobs[i],
               onTap: () => context.push('/jobs/${jobs[i].id}'),

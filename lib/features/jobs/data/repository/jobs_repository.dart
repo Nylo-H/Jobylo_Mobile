@@ -58,6 +58,11 @@ class JobsRepository {
     return Job.fromJson(data);
   }
 
+  Future<Job> updateJobStatus(String jobId, String status) async {
+    final data = await _datasource.updateJobStatus(jobId, status);
+    return Job.fromJson(data);
+  }
+
   Future<List<Map<String, dynamic>>> getCategories() {
     return _datasource.getCategories();
   }

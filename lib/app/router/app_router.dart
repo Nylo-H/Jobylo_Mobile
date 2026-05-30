@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../features/applications/presentation/pages/applicants_page.dart';
+import '../../features/applications/presentation/pages/my_applications_page.dart';
 import '../../features/auth/presentation/providers/auth_provider.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/register_page.dart';
@@ -94,11 +96,27 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const KycPage(),
       ),
       GoRoute(
+        path: '/my-applications',
+        name: 'my-applications',
+        builder: (context, state) =>
+            const MyApplicationsPage(standalone: true),
+      ),
+      GoRoute(
         path: '/jobs/:jobId',
         name: 'job-detail',
         builder: (context, state) {
           final jobId = state.pathParameters['jobId']!;
           return JobDetailPage(jobId: jobId);
+        },
+      ),
+      GoRoute(
+        path: '/jobs/:jobId/applicants',
+        name: 'job-applicants',
+        builder: (context, state) {
+          final jobId = state.pathParameters['jobId']!;
+          final jobTitle =
+              state.uri.queryParameters['title'] ?? 'Candidatures';
+          return ApplicantsPage(jobId: jobId, jobTitle: jobTitle);
         },
       ),
     ],

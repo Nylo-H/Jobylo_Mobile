@@ -5,6 +5,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/constants/app_sizes.dart';
 import '../../../../shared/widgets/app_text_field.dart';
 import '../providers/auth_provider.dart';
+import 'forgot_password_page.dart';
 
 class LoginPage extends ConsumerStatefulWidget {
   const LoginPage({super.key});
@@ -31,11 +32,17 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isLoading = true);
     try {
-      await ref.read(authStateProvider.notifier).login(
+      final verified = await ref.read(authStateProvider.notifier).login(
             email: _emailController.text.trim(),
             password: _passwordController.text,
           );
-      // Navigation handled automatically by GoRouter refreshListenable
+      if (!verified && mounted) {
+        // Not verified → redirect to OTP with the email
+        context.push(
+          '/auth/otp?email=${Uri.encodeComponent(_emailController.text.trim())}',
+        );
+      }
+      // If verified, GoRouter refreshListenable redirects to /jobs automatically
     } catch (e) {
       if (mounted) _showError(e.toString());
     } finally {
@@ -151,7 +158,10 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 Align(
                   alignment: Alignment.centerRight,
                   child: TextButton(
-                    onPressed: () {},
+                    onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                          builder: (_) => const ForgotPasswordPage()),
+                    ),
                     style: TextButton.styleFrom(
                       padding: const EdgeInsets.symmetric(
                         horizontal: AppSizes.sm,
@@ -159,12 +169,11 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                       ),
                     ),
                     child: const Text(
-                      'OUBLIÉ ?',
+                      'Mot de passe oublié ?',
                       style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.textSecondary,
-                        letterSpacing: 0.5,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.primary,
                       ),
                     ),
                   ),

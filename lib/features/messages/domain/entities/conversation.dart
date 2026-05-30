@@ -21,17 +21,29 @@ class Conversation {
 
   factory Conversation.fromJson(Map<String, dynamic> json) {
     return Conversation(
-      conversationId: json['conversationId'] as String,
-      jobId: json['jobId'] as String,
+      conversationId: json['conversationId']?.toString() ?? '',
+      jobId: json['jobId']?.toString() ?? '',
       jobTitle: json['jobTitle'] as String? ?? '',
-      otherUserId: json['otherUserId'] as String,
-      otherUserUsername: json['otherUserUsername'] as String,
+      otherUserId: json['otherUserId']?.toString() ?? '',
+      otherUserUsername: json['otherUserUsername'] as String? ?? '',
       lastMessage: json['lastMessage'] as String?,
-      lastMessageTimestamp: json['lastMessageTimestamp'] != null
-          ? DateTime.parse(json['lastMessageTimestamp'] as String)
-          : null,
+      lastMessageTimestamp: _parseDate(json['lastMessageTimestamp']),
       unreadCount: json['unreadCount'] as int? ?? 0,
     );
+  }
+
+  static DateTime? _parseDate(dynamic raw) {
+    if (raw == null) return null;
+    if (raw is String) return DateTime.tryParse(raw);
+    if (raw is List && raw.length >= 6) {
+      try {
+        return DateTime(
+          raw[0] as int, raw[1] as int, raw[2] as int,
+          raw[3] as int, raw[4] as int, raw[5] as int,
+        );
+      } catch (_) {}
+    }
+    return null;
   }
 
   String get formattedTime {

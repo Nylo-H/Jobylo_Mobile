@@ -15,9 +15,7 @@ void main() async {
 
   runApp(
     ProviderScope(
-      overrides: [
-        localDbProvider.overrideWithValue(db),
-      ],
+      overrides: [localDbProvider.overrideWithValue(db)],
       child: const JobyloApp(),
     ),
   );

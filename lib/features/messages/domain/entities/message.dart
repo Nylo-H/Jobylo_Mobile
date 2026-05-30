@@ -25,19 +25,31 @@ class Message {
 
   factory Message.fromJson(Map<String, dynamic> json) {
     return Message(
-      id: json['id'] as String,
-      conversationId: json['conversationId'] as String,
-      senderId: json['senderId'] as String,
-      senderUsername: json['senderUsername'] as String,
-      receiverId: json['receiverId'] as String,
+      id: json['id']?.toString() ?? '',
+      conversationId: json['conversationId']?.toString() ?? '',
+      senderId: json['senderId']?.toString() ?? '',
+      senderUsername: json['senderUsername'] as String? ?? '',
+      receiverId: json['receiverId']?.toString() ?? '',
       receiverUsername: json['receiverUsername'] as String?,
-      jobId: json['jobId'] as String,
-      content: json['content'] as String,
-      timestamp: json['timestamp'] != null
-          ? DateTime.parse(json['timestamp'] as String)
-          : null,
+      jobId: json['jobId']?.toString() ?? '',
+      content: json['content'] as String? ?? '',
+      timestamp: _parseDate(json['timestamp']),
       isRead: json['isRead'] as bool? ?? false,
     );
+  }
+
+  static DateTime? _parseDate(dynamic raw) {
+    if (raw == null) return null;
+    if (raw is String) return DateTime.tryParse(raw);
+    if (raw is List && raw.length >= 6) {
+      try {
+        return DateTime(
+          raw[0] as int, raw[1] as int, raw[2] as int,
+          raw[3] as int, raw[4] as int, raw[5] as int,
+        );
+      } catch (_) {}
+    }
+    return null;
   }
 
   String get formattedTime {

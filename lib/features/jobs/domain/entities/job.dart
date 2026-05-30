@@ -37,27 +37,40 @@ class Job {
 
   factory Job.fromJson(Map<String, dynamic> json) {
     return Job(
-      id: json['id'] as String,
-      title: json['title'] as String,
+      id: json['id']?.toString() ?? '',
+      title: json['title']?.toString() ?? '',
       description: json['description'] as String?,
       location: json['location'] as String? ?? '',
-      price: (json['price'] as num).toDouble(),
-      creatorId: json['creatorId'] as String? ?? '',
+      price: (json['price'] as num?)?.toDouble() ?? 0,
+      creatorId: json['creatorId']?.toString() ?? '',
       creatorUsername: json['creatorUsername'] as String? ?? '',
-      workerId: json['workerId'] as String?,
+      workerId: json['workerId']?.toString(),
       workerUsername: json['workerUsername'] as String?,
       status: json['status'] as String? ?? 'PENDING',
-      createdAt: DateTime.parse(json['createdAt'] as String),
-      updatedAt: json['updatedAt'] != null
-          ? DateTime.parse(json['updatedAt'] as String)
-          : null,
+      createdAt: _parseDate(json['createdAt']) ?? DateTime.now(),
+      updatedAt: _parseDate(json['updatedAt']),
       images: (json['images'] as List<dynamic>?)
-              ?.map((e) => e as String)
+              ?.map((e) => e.toString())
               .toList() ??
           [],
-      categoryId: json['categoryId'] as String?,
+      categoryId: json['categoryId']?.toString(),
       categoryName: json['categoryName'] as String?,
     );
+  }
+
+  /// Handles both ISO-8601 String and Jackson LocalDateTime array [y,m,d,h,min,s,ns]
+  static DateTime? _parseDate(dynamic raw) {
+    if (raw == null) return null;
+    if (raw is String) return DateTime.tryParse(raw);
+    if (raw is List && raw.length >= 6) {
+      try {
+        return DateTime(
+          raw[0] as int, raw[1] as int, raw[2] as int,
+          raw[3] as int, raw[4] as int, raw[5] as int,
+        );
+      } catch (_) {}
+    }
+    return null;
   }
 
   String get fullImageUrl {
