@@ -10,25 +10,42 @@ import '../../../../core/constants/app_sizes.dart';
 import '../../../../shared/widgets/app_text_field.dart';
 import '../providers/jobs_provider.dart';
 import '../../data/repository/jobs_repository.dart';
+import '../../domain/entities/job.dart';
 
-class CreateJobPage extends ConsumerStatefulWidget {
-  const CreateJobPage({super.key});
+class EditJobPage extends ConsumerStatefulWidget {
+  final Job job;
+  const EditJobPage({super.key, required this.job});
 
   @override
-  ConsumerState<CreateJobPage> createState() => _CreateJobPageState();
+  ConsumerState<EditJobPage> createState() => _EditJobPageState();
 }
 
-class _CreateJobPageState extends ConsumerState<CreateJobPage> {
+class _EditJobPageState extends ConsumerState<EditJobPage> {
   final _formKey = GlobalKey<FormState>();
-  final _titleController = TextEditingController();
-  final _descController = TextEditingController();
-  final _locationController = TextEditingController();
-  final _priceController = TextEditingController();
+  late final TextEditingController _titleController;
+  late final TextEditingController _descController;
+  late final TextEditingController _locationController;
+  late final TextEditingController _priceController;
   String? _selectedCategoryId;
   String? _selectedCategoryName;
-  final List<File> _pickedImages = [];
+  final List<File> _newImages = [];
+  List<String> _existingImages = [];
   DateTime? _applicationDeadline;
   bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final job = widget.job;
+    _titleController = TextEditingController(text: job.title);
+    _descController = TextEditingController(text: job.description ?? '');
+    _locationController = TextEditingController(text: job.location);
+    _priceController = TextEditingController(text: job.price.toStringAsFixed(0));
+    _selectedCategoryId = job.categoryId;
+    _selectedCategoryName = job.categoryName;
+    _existingImages = List.from(job.images);
+    _applicationDeadline = job.applicationDeadline;
+  }
 
   @override
   void dispose() {
@@ -39,26 +56,27 @@ class _CreateJobPageState extends ConsumerState<CreateJobPage> {
     super.dispose();
   }
 
-  // ── Image picking ────────────────────────────────────────────────────────
   Future<void> _pickImages() async {
     final picker = ImagePicker();
     final files = await picker.pickMultiImage(imageQuality: 80, limit: 5);
     if (files.isEmpty) return;
     setState(() {
-      _pickedImages.addAll(files.map((f) => File(f.path)));
-      if (_pickedImages.length > 5) _pickedImages.length = 5;
+      _newImages.addAll(files.map((f) => File(f.path)));
+      final total = _existingImages.length + _newImages.length;
+      if (total > 5) _newImages.length = 5 - _existingImages.length;
     });
   }
 
-  void _removeImage(int index) =>
-      setState(() => _pickedImages.removeAt(index));
+  void _removeNewImage(int index) => setState(() => _newImages.removeAt(index));
 
-  // ── Date picker ──────────────────────────────────────────────────────────
+  void _removeExistingImage(int index) =>
+      setState(() => _existingImages.removeAt(index));
+
   Future<void> _pickDeadline() async {
     final now = DateTime.now();
     final picked = await showDatePicker(
       context: context,
-      initialDate: now.add(const Duration(days: 7)),
+      initialDate: _applicationDeadline ?? now.add(const Duration(days: 7)),
       firstDate: now.add(const Duration(days: 1)),
       lastDate: now.add(const Duration(days: 365)),
       helpText: 'Date limite de candidature',
@@ -68,7 +86,6 @@ class _CreateJobPageState extends ConsumerState<CreateJobPage> {
     if (picked != null) setState(() => _applicationDeadline = picked);
   }
 
-  // ── Upload images then create job ─────────────────────────────────────
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     if (_selectedCategoryId == null) {
@@ -77,26 +94,26 @@ class _CreateJobPageState extends ConsumerState<CreateJobPage> {
     }
     setState(() => _isLoading = true);
     try {
-      // 1. Create job first (no images yet)
       final repo = ref.read(jobsRepositoryProvider);
-      final job = await repo.createJob(
+      await repo.updateJob(
+        jobId: widget.job.id,
         title: _titleController.text.trim(),
         description: _descController.text.trim(),
         location: _locationController.text.trim(),
         price: double.parse(_priceController.text.trim()),
         categoryId: _selectedCategoryId!,
+        images: _existingImages,
         applicationDeadline: _applicationDeadline,
       );
 
-      // 2. Upload images one-by-one via POST /jobs/{id}/images
-      if (_pickedImages.isNotEmpty) {
+      if (_newImages.isNotEmpty) {
         final dio = ref.read(dioProvider);
-        for (final file in _pickedImages) {
+        for (final file in _newImages) {
           final formData = FormData.fromMap({
             'file': await MultipartFile.fromFile(file.path),
           });
           await dio.post(
-            '${ApiConstants.jobs}/${job.id}/images',
+            '${ApiConstants.jobs}/${widget.job.id}/images',
             data: formData,
           );
         }
@@ -104,8 +121,9 @@ class _CreateJobPageState extends ConsumerState<CreateJobPage> {
 
       ref.invalidate(myCreatedJobsProvider);
       ref.invalidate(availableJobsProvider);
+      ref.invalidate(jobDetailProvider(widget.job.id));
       if (mounted) {
-        _showSuccess('Annonce publiée avec succès !');
+        _showSuccess('Annonce modifiée avec succès !');
         Navigator.of(context).pop(true);
       }
     } catch (e) {
@@ -175,7 +193,7 @@ class _CreateJobPageState extends ConsumerState<CreateJobPage> {
           icon: const Icon(Icons.close, color: AppColors.textPrimary),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text('Créer une annonce',
+        title: const Text('Modifier l\'annonce',
             style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
         actions: [
           Padding(
@@ -187,7 +205,7 @@ class _CreateJobPageState extends ConsumerState<CreateJobPage> {
                       width: 18, height: 18,
                       child: CircularProgressIndicator(
                           strokeWidth: 2, color: AppColors.primary))
-                  : const Text('Publier',
+                  : const Text('Enregistrer',
                       style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w700,
@@ -201,15 +219,67 @@ class _CreateJobPageState extends ConsumerState<CreateJobPage> {
         child: ListView(
           padding: const EdgeInsets.all(AppSizes.md),
           children: [
-            // ── Image picker ─────────────────────────────────────────
+            // ── Existing images ──────────────────────────────────────
+            if (_existingImages.isNotEmpty) ...[
+              const _SectionLabel(label: 'Photos actuelles'),
+              const SizedBox(height: AppSizes.sm),
+              SizedBox(
+                height: 100,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: _existingImages.length,
+                  itemBuilder: (_, i) {
+                    final url = _existingImages[i].startsWith('http')
+                        ? _existingImages[i]
+                        : '${ApiConstants.baseUrl}${_existingImages[i]}';
+                    return Stack(
+                      children: [
+                        Container(
+                          width: 100,
+                          height: 100,
+                          margin: const EdgeInsets.only(right: AppSizes.sm),
+                          decoration: BoxDecoration(
+                            borderRadius:
+                                BorderRadius.circular(AppSizes.radiusMd),
+                            image: DecorationImage(
+                              image: NetworkImage(url),
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          top: 4,
+                          right: 12,
+                          child: GestureDetector(
+                            onTap: () => _removeExistingImage(i),
+                            child: Container(
+                              padding: const EdgeInsets.all(3),
+                              decoration: const BoxDecoration(
+                                  color: Colors.black54,
+                                  shape: BoxShape.circle),
+                              child: const Icon(Icons.close,
+                                  size: 14, color: Colors.white),
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: AppSizes.md),
+            ],
+
+            // ── New images picker ───────────────────────────────────
             _ImagePickerSection(
-              images: _pickedImages,
+              images: _newImages,
+              maxTotal: 5 - _existingImages.length,
               onAdd: _pickImages,
-              onRemove: _removeImage,
+              onRemove: _removeNewImage,
             ),
             const SizedBox(height: AppSizes.lg),
 
-            _SectionLabel(label: 'Informations générales'),
+            const _SectionLabel(label: 'Informations générales'),
             const SizedBox(height: AppSizes.sm),
 
             AppTextField(
@@ -229,23 +299,21 @@ class _CreateJobPageState extends ConsumerState<CreateJobPage> {
             ),
             const SizedBox(height: AppSizes.md),
 
-            // Category picker
             categoriesAsync.when(
               loading: () => const SizedBox(
                   height: 56,
                   child: Center(
                       child: CircularProgressIndicator(strokeWidth: 2))),
-              error: (_, _) => const SizedBox.shrink(),
+              error: (_, __) => const SizedBox.shrink(),
               data: (cats) => GestureDetector(
                 onTap: () => _pickCategory(cats),
                 child: Container(
                   height: 56,
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: AppSizes.md),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: AppSizes.md),
                   decoration: BoxDecoration(
                     color: AppColors.surface,
-                    borderRadius:
-                        BorderRadius.circular(AppSizes.radiusMd),
+                    borderRadius: BorderRadius.circular(AppSizes.radiusMd),
                     border: Border.all(
                       color: _selectedCategoryId != null
                           ? AppColors.primary
@@ -263,8 +331,7 @@ class _CreateJobPageState extends ConsumerState<CreateJobPage> {
                       const SizedBox(width: AppSizes.sm),
                       Expanded(
                         child: Text(
-                          _selectedCategoryName ??
-                              'Choisir une catégorie',
+                          _selectedCategoryName ?? 'Choisir une catégorie',
                           style: TextStyle(
                               fontSize: 15,
                               color: _selectedCategoryId != null
@@ -281,7 +348,7 @@ class _CreateJobPageState extends ConsumerState<CreateJobPage> {
             ),
             const SizedBox(height: AppSizes.lg),
 
-            _SectionLabel(label: 'Lieu & Prix'),
+            const _SectionLabel(label: 'Lieu & Prix'),
             const SizedBox(height: AppSizes.sm),
 
             AppTextField(
@@ -310,7 +377,7 @@ class _CreateJobPageState extends ConsumerState<CreateJobPage> {
             ),
             const SizedBox(height: AppSizes.lg),
 
-            _SectionLabel(label: 'Date limite (optionnelle)'),
+            const _SectionLabel(label: 'Date limite (optionnelle)'),
             const SizedBox(height: AppSizes.sm),
             GestureDetector(
               onTap: () => _pickDeadline(),
@@ -351,8 +418,7 @@ class _CreateJobPageState extends ConsumerState<CreateJobPage> {
                   ),
                   if (_applicationDeadline != null)
                     GestureDetector(
-                      onTap: () =>
-                          setState(() => _applicationDeadline = null),
+                      onTap: () => setState(() => _applicationDeadline = null),
                       child: const Icon(Icons.close,
                           size: 18, color: AppColors.textHint),
                     ),
@@ -381,7 +447,7 @@ class _CreateJobPageState extends ConsumerState<CreateJobPage> {
                             strokeWidth: 2.5,
                             valueColor: AlwaysStoppedAnimation<Color>(
                                 Colors.white)))
-                    : const Text('Publier l\'annonce',
+                    : const Text('Enregistrer les modifications',
                         style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
@@ -399,32 +465,35 @@ class _CreateJobPageState extends ConsumerState<CreateJobPage> {
 // ── Image picker section ──────────────────────────────────────────────────
 class _ImagePickerSection extends StatelessWidget {
   final List<File> images;
+  final int maxTotal;
   final VoidCallback onAdd;
   final void Function(int) onRemove;
 
   const _ImagePickerSection({
     required this.images,
+    required this.maxTotal,
     required this.onAdd,
     required this.onRemove,
   });
 
   @override
   Widget build(BuildContext context) {
+    if (maxTotal <= 0) return const SizedBox.shrink();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
-            const Text('Photos',
+            const Text('Nouvelles photos',
                 style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
                     color: AppColors.textSecondary,
                     letterSpacing: 0.8)),
             const Spacer(),
-            Text('${images.length}/5',
-                style: const TextStyle(
-                    fontSize: 12, color: AppColors.textHint)),
+            Text('${images.length}/$maxTotal',
+                style:
+                    const TextStyle(fontSize: 12, color: AppColors.textHint)),
           ],
         ),
         const SizedBox(height: AppSizes.sm),
@@ -433,8 +502,7 @@ class _ImagePickerSection extends StatelessWidget {
           child: ListView(
             scrollDirection: Axis.horizontal,
             children: [
-              // Add button
-              if (images.length < 5)
+              if (images.length < maxTotal)
                 GestureDetector(
                   onTap: onAdd,
                   child: Container(
@@ -443,11 +511,8 @@ class _ImagePickerSection extends StatelessWidget {
                     margin: const EdgeInsets.only(right: AppSizes.sm),
                     decoration: BoxDecoration(
                       color: AppColors.surfaceVariant,
-                      borderRadius:
-                          BorderRadius.circular(AppSizes.radiusMd),
-                      border: Border.all(
-                          color: AppColors.border,
-                          style: BorderStyle.solid),
+                      borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+                      border: Border.all(color: AppColors.border),
                     ),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -455,8 +520,7 @@ class _ImagePickerSection extends StatelessWidget {
                         Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color:
-                                AppColors.primary.withValues(alpha: 0.1),
+                            color: AppColors.primary.withValues(alpha: 0.1),
                             shape: BoxShape.circle,
                           ),
                           child: const Icon(
@@ -474,7 +538,6 @@ class _ImagePickerSection extends StatelessWidget {
                     ),
                   ),
                 ),
-              // Picked images
               ...List.generate(images.length, (i) {
                 return Stack(
                   children: [
@@ -499,8 +562,7 @@ class _ImagePickerSection extends StatelessWidget {
                         child: Container(
                           padding: const EdgeInsets.all(3),
                           decoration: const BoxDecoration(
-                              color: Colors.black54,
-                              shape: BoxShape.circle),
+                              color: Colors.black54, shape: BoxShape.circle),
                           child: const Icon(Icons.close,
                               size: 14, color: Colors.white),
                         ),
@@ -599,7 +661,7 @@ class _CategoryPicker extends StatelessWidget {
             child: ListView.separated(
               shrinkWrap: true,
               itemCount: items.length,
-              separatorBuilder: (_, _) => const Divider(height: 1),
+              separatorBuilder: (_, __) => const Divider(height: 1),
               itemBuilder: (_, i) {
                 final item = items[i];
                 final isSelected = item.id == selectedId;

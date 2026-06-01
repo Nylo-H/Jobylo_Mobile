@@ -27,9 +27,12 @@ class MyApplicationsPage extends ConsumerWidget {
       ),
       data: (applications) {
         if (applications.isEmpty) {
-          return const AppEmpty(
-            message: 'Vous n\'avez encore postulé à aucune annonce.',
-            icon: Icons.inbox_outlined,
+          return RefreshIndicator(
+            onRefresh: () => ref.read(myApplicationsProvider.notifier).refresh(),
+            child: const AppEmpty(
+              message: 'Vous n\'avez encore postulé à aucune annonce.',
+              icon: Icons.inbox_outlined,
+            ),
           );
         }
 

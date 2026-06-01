@@ -46,6 +46,7 @@ class JobsRepository {
     required double price,
     required String categoryId,
     List<String> images = const [],
+    DateTime? applicationDeadline,
   }) async {
     final data = await _datasource.createJob({
       'title': title,
@@ -54,6 +55,31 @@ class JobsRepository {
       'price': price,
       'categoryId': categoryId,
       'images': images,
+      if (applicationDeadline != null)
+        'applicationDeadline': applicationDeadline.toUtc().toIso8601String(),
+    });
+    return Job.fromJson(data);
+  }
+
+  Future<Job> updateJob({
+    required String jobId,
+    required String title,
+    required String description,
+    required String location,
+    required double price,
+    required String categoryId,
+    List<String> images = const [],
+    DateTime? applicationDeadline,
+  }) async {
+    final data = await _datasource.updateJob(jobId, {
+      'title': title,
+      'description': description,
+      'location': location,
+      'price': price,
+      'categoryId': categoryId,
+      'images': images,
+      if (applicationDeadline != null)
+        'applicationDeadline': applicationDeadline.toUtc().toIso8601String(),
     });
     return Job.fromJson(data);
   }

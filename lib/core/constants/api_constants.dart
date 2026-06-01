@@ -2,8 +2,8 @@ class ApiConstants {
   ApiConstants._();
 
   static const String baseUrl =
-      'http://192.168.137.1:8080/api'; // 192.168.137.1
-  static const String wsUrl = 'ws://192.168.137.1:8080/api/ws';
+      'http://192.168.43.20:8080/api'; // 192.168.43.20
+  static const String wsUrl = 'ws://192.168.43.20:8080/api/ws';
 
   // Auth
   static const String register = '/auth/register';

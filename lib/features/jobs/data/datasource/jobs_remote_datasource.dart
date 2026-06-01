@@ -74,6 +74,16 @@ class JobsRemoteDatasource {
     }
   }
 
+  Future<Map<String, dynamic>> updateJob(
+      String jobId, Map<String, dynamic> body) async {
+    try {
+      final r = await _dio.put('${ApiConstants.jobs}/$jobId', data: body);
+      return Map<String, dynamic>.from(r.data as Map);
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
   Future<Map<String, dynamic>> updateJobStatus(
       String jobId, String status) async {
     try {

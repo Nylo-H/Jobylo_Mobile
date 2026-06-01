@@ -13,6 +13,8 @@ import '../../features/jobs/presentation/pages/my_jobs_page.dart';
 import '../../features/kyc/presentation/pages/kyc_page.dart';
 import '../../features/messages/presentation/pages/messages_page.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
+import '../../features/ratings/presentation/pages/my_ratings_page.dart';
+import '../../features/users/presentation/pages/user_profile_page.dart';
 import 'shell_scaffold.dart';
 
 // ChangeNotifier that wraps the Riverpod auth state so GoRouter can listen to it
@@ -117,6 +119,19 @@ final routerProvider = Provider<GoRouter>((ref) {
           final jobTitle =
               state.uri.queryParameters['title'] ?? 'Candidatures';
           return ApplicantsPage(jobId: jobId, jobTitle: jobTitle);
+        },
+      ),
+      GoRoute(
+        path: '/my-ratings',
+        name: 'my-ratings',
+        builder: (context, state) => const MyRatingsPage(),
+      ),
+      GoRoute(
+        path: '/user/:userId',
+        name: 'user-profile',
+        builder: (context, state) {
+          final userId = state.pathParameters['userId']!;
+          return UserProfilePage(userId: userId);
         },
       ),
     ],

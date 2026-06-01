@@ -242,9 +242,29 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                   validator: (v) {
                     if (v == null || v.isEmpty) return 'Requis';
                     if (v.length < 8) return 'Minimum 8 caractères';
+                    if (!RegExp(r'[A-Z]').hasMatch(v)) {
+                      return 'Au moins une majuscule requise';
+                    }
+                    if (!RegExp(r'\d').hasMatch(v)) {
+                      return 'Au moins un chiffre requis';
+                    }
                     return null;
                   },
+                  onChanged: (_) => setState(() {}),
                 ),
+                // Password requirements
+                if (_passwordCtrl.text.isNotEmpty) ...[
+                  const SizedBox(height: AppSizes.sm),
+                  _Req(
+                      met: _passwordCtrl.text.length >= 8,
+                      label: '8 caractères minimum'),
+                  _Req(
+                      met: RegExp(r'[A-Z]').hasMatch(_passwordCtrl.text),
+                      label: '1 lettre majuscule'),
+                  _Req(
+                      met: RegExp(r'\d').hasMatch(_passwordCtrl.text),
+                      label: '1 chiffre'),
+                ],
                 const SizedBox(height: AppSizes.md),
 
                 AppTextField(
@@ -304,6 +324,31 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _Req extends StatelessWidget {
+  final bool met;
+  final String label;
+  const _Req({required this.met, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 2),
+      child: Row(children: [
+        Icon(
+          met ? Icons.check_circle : Icons.radio_button_unchecked,
+          size: 14,
+          color: met ? AppColors.success : AppColors.textHint,
+        ),
+        const SizedBox(width: 6),
+        Text(label,
+            style: TextStyle(
+                fontSize: 12,
+                color: met ? AppColors.success : AppColors.textHint)),
+      ]),
     );
   }
 }

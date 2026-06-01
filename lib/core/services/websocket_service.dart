@@ -82,6 +82,9 @@ class WebSocketService {
   final Map<String, bool> _onlineUsers = {};
   bool isUserOnline(String userId) => _onlineUsers[userId] ?? false;
 
+  // Deduplication: track seen message IDs to avoid duplicates from personal queue + topic
+  final Set<String> _seenMessageIds = {};
+
   bool _connected = false;
   bool get isConnected => _connected;
 
@@ -126,6 +129,25 @@ class WebSocketService {
     String? conversationId,
   ) {
     _connected = true;
+
+    // ── /user/{userId}/queue/messages — personal queue (all messages) ─
+    // Fixes "first message doesn't appear": this queue receives ALL messages
+    // for this user regardless of whether the topic subscription exists yet.
+    _client!.subscribe(
+      destination: '/user/$userId/queue/messages',
+      callback: (f) {
+        if (f.body == null) return;
+        try {
+          final msg = Message.fromJson(
+              jsonDecode(f.body!) as Map<String, dynamic>);
+          // Deduplicate: topic subscription may also deliver this message
+          if (!_seenMessageIds.contains(msg.id)) {
+            _seenMessageIds.add(msg.id);
+            _messageCtrl.add(msg);
+          }
+        } catch (_) {}
+      },
+    );
 
     // ── /topic/notifications/{userId} ─────────────────────────────────
     _client!.subscribe(
@@ -175,14 +197,18 @@ class WebSocketService {
     if (_client == null || !_connected) return;
     if (_convSubs.containsKey(conversationId)) return; // already subscribed
 
-    // Messages temps réel
+    // Messages temps réel (deduplicated with personal queue)
     final msgUnsub = _client!.subscribe(
       destination: '/topic/messages/$conversationId',
       callback: (f) {
         if (f.body == null) return;
         try {
-          _messageCtrl
-              .add(Message.fromJson(jsonDecode(f.body!) as Map<String, dynamic>));
+          final msg = Message.fromJson(
+              jsonDecode(f.body!) as Map<String, dynamic>);
+          if (!_seenMessageIds.contains(msg.id)) {
+            _seenMessageIds.add(msg.id);
+            _messageCtrl.add(msg);
+          }
         } catch (_) {}
       },
     );
@@ -218,6 +244,7 @@ class WebSocketService {
     _connected = false;
     _convSubs.clear();
     _readSubs.clear();
+    _seenMessageIds.clear();
   }
 
   void dispose() {

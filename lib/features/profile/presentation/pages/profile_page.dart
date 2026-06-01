@@ -244,7 +244,7 @@ class ProfilePage extends ConsumerWidget {
                           _MenuItem(
                             icon: Icons.star_outline,
                             label: 'Mes évaluations',
-                            onTap: () {},
+                            onTap: () => context.push('/my-ratings'),
                           ),
                           const Divider(height: 1, indent: 56),
                           _MenuItem(

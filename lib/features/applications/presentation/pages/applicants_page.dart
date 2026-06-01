@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/constants/app_sizes.dart';
+import '../../../../features/jobs/presentation/providers/jobs_provider.dart';
+import '../../../../shared/widgets/app_empty.dart';
 import '../../domain/entities/application.dart';
 import '../providers/applications_provider.dart';
 
@@ -57,16 +59,12 @@ class ApplicantsPage extends ConsumerWidget {
         data: (applicants) {
           debugPrint('=== APPLICANTS DATA: ${applicants.length} items ===');
           if (applicants.isEmpty) {
-            return const Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.group_off_outlined,
-                      size: 56, color: AppColors.textHint),
-                  SizedBox(height: AppSizes.md),
-                  Text('Aucune candidature pour le moment.',
-                      style: TextStyle(color: AppColors.textHint)),
-                ],
+            return RefreshIndicator(
+              onRefresh: () async =>
+                  ref.invalidate(jobApplicantsProvider(jobId)),
+              child: const AppEmpty(
+                message: 'Aucune candidature pour le moment.',
+                icon: Icons.group_off_outlined,
               ),
             );
           }
@@ -261,6 +259,10 @@ class ApplicantsPage extends ConsumerWidget {
       await ref
           .read(jobApplicantsProvider(jobId).notifier)
           .assign(app.workerId);
+      // Le job passe en IN_PROGRESS et le compteur change
+      ref.invalidate(jobDetailProvider(jobId));
+      ref.invalidate(applicantsCountProvider(jobId));
+      ref.invalidate(myCreatedJobsProvider);
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
           content: Text('Candidat sélectionné !'),
